@@ -274,13 +274,13 @@ def compute_hand_geometry(landmarks, coord_system="auto"):
         proj_up = np.dot(pts[tip] - pts[mcp], u_up) / palm_len
 
         is_ext = bool((d_tip_wrist > d_pip_wrist + 0.10) and (proj_up > 0.35) and (d_tip_mcp > 0.55))
-        is_crl = bool(d_tip_mcp < 0.45 or (d_tip_wrist <= d_pip_wrist + 0.05 and proj_up < 0.22))
-        is_crv = bool(0.40 <= d_tip_mcp <= 0.85 and 0.10 <= proj_up <= 0.50 and not is_ext and not is_crl)
+        is_crl = bool(d_tip_mcp < 0.38 and proj_up < 0.18) or bool(d_tip_wrist <= d_pip_wrist and d_tip_mcp < 0.44 and proj_up < 0.02)
+        is_crv = bool(not is_ext and not is_crl and (0.28 <= d_tip_mcp <= 0.95 or proj_up >= 0.05))
 
         # Hook shape (specifically for X): PIP is extended, but DIP/TIP is bent at 90°
         d_pip_mcp = np.linalg.norm(pts[pip] - pts[mcp]) / palm_len
         d_tip_pip = np.linalg.norm(pts[tip] - pts[pip]) / palm_len
-        is_hook = bool(proj_up > 0.10 and d_pip_mcp > 0.18 and d_tip_pip < 0.42 and not is_ext)
+        is_hook = bool(proj_up > 0.10 and d_pip_mcp > 0.18 and d_tip_pip < 0.42 and not is_ext and not is_crv)
 
         extended.append(is_ext)
         curled.append(is_crl)
@@ -417,25 +417,35 @@ def recognize_sign(landmarks, handedness="Right", tracker=None, coord_system="au
     # 3. CLOSED-LOOP / ARCH SIGNS: O (checked first — tighter), then C
     # =========================================================================
     is_fist_thumb_upright = bool(
-        th["thumb_proj_up"] > 0.10
+        th["thumb_proj_up"] > 0.18
         and th["thumb_tip_proj_up"] > -0.25
-        and th["d_thumb_pinky_mcp"] > 0.60
+        and th["d_thumb_pinky_mcp"] > 0.65
+        and (crl[0] or crl[1])
     )
     all_curled_fist = bool(crl[0] and crl[1] and crl[2] and crl[3])
 
-    # Sign O: tight closed loop — all fingertips converge to thumb tip
-    if (th["d_thumb_index_tip"] < 0.26
-            and th["d_thumb_middle_tip"] < 0.36
-            and not ext[0] and not ext[1]
-            and not is_fist_thumb_upright
-            and not all_curled_fist):
+    # Sign O: closed loop — thumb tip and index/middle tips meet in air
+    # Index and middle are not straight up; tips touch or come very close to thumb tip
+    if (th["d_thumb_index_tip"] < 0.40
+            and th["d_thumb_middle_tip"] < 0.50
+            and not ext[0] and not ext[1] and not ext[3]  # not I / Y (pinky up)
+            and not (ext[1] and ext[2] and ext[3])   # not F (which has 3 fingers up)
+            and not is_fist_thumb_upright            # not A
+            and th["d_thumb_pinky_mcp"] >= 0.30):    # not tucked deep inside fist (M/N)
         return "O", 0.95, "All fingertips touching thumb — closed 'O'", binary_fingers
 
     # Sign C: fingers curved in open arch, moderate gap from thumb
-    if (sum(crv) >= 3 and not ext[0] and not ext[1]
-            and 0.32 <= th["d_thumb_index_tip"] <= 0.92
+    # Thumb and fingers form an open 'C' shape with an open gap
+    d_idx_tip_mcp = float(np.linalg.norm(geo["pts"][8] - geo["pts"][5]) / geo["palm_len"])
+    idx_arched_out = bool(d_idx_tip_mcp >= 0.28 or (geo["pts"][8, 1] > geo["pts"][5, 1] - 0.10 * geo["palm_len"]) or sum(crv) >= 1)
+
+    if (not ext[0] and not ext[1] and not ext[3]
+            and 0.30 <= th["d_thumb_index_tip"] <= 1.25
+            and th["d_thumb_middle_tip"] >= 0.30
             and not is_fist_thumb_upright
-            and not all_curled_fist):
+            and th["d_thumb_pinky_mcp"] >= 0.35
+            and idx_arched_out
+            and not (th["thumb_proj_up"] <= 0.12 and th["d_thumb_index_tip"] < 0.58 and all_curled_fist)):
         return "C", 0.93, "Hand curved in open 'C' arch", binary_fingers
 
     # =========================================================================
