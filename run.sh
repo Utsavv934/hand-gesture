@@ -11,4 +11,4 @@ export MPLCONFIGDIR="$(pwd)/.cache/matplotlib"
 lsof -ti :8501 | xargs kill -9 2>/dev/null || true
 
 echo "Starting ECHO HANDS on http://localhost:8501 ..."
-.venv/bin/streamlit run app.py --browser.gatherUsageStats=false
+.venv/bin/streamlit run app.py --server.headless=true --browser.gatherUsageStats=false
