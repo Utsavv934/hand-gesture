@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ECHO HANDS — Real-Time Sign Language Recognition & Speech
 
 ## Project Overview & Pitch
@@ -125,3 +126,6 @@ ECHO HANDS is a real-time ASL recognition and speech synthesis system that turns
 cd /Users/utsav/Desktop/Echo-Hands-main && ./run.sh
 # for web running command 
 http://localhost:8501
+=======
+# hand-gesture
+>>>>>>> 79786de4880e866c04654b3b6bad5e92b5799a3e
