@@ -119,3 +119,9 @@ Or:
 ## Project Summary
 
 ECHO HANDS is a real-time ASL recognition and speech synthesis system that turns live hand gestures into spoken English. By combining computer vision, gesture recognition, and assistive AI, the project helps reduce communication barriers and improve accessibility for sign language users.
+
+
+# running command 
+cd /Users/utsav/Desktop/Echo-Hands-main && ./run.sh
+# for web running command 
+http://localhost:8501
